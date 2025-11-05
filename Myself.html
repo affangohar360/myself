@@ -1,0 +1,1999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royal Sherwani App v16</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        /* (Saara CSS code wahi hai... koi change nahi) */
+        :root {
+            --primary: #4a148c;
+            --secondary: #ffc107;
+            --danger: #dc3545;
+            --success: #28a745;
+            --action-color: #007bff;
+            --urgent-color: #ff6f00;
+            --fabric-color: #673ab7;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #app-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--secondary);
+            flex-grow: 1;
+            text-align: center;
+        }
+        #logout-btn {
+             background: none; border: none; color: white; font-size: 1.2em; cursor: pointer; padding: 5px;
+        }
+        #create-btn {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            font-size: 0.9em;
+            cursor: pointer;
+            padding: 5px 10px;
+            margin-left: 10px;
+            border-radius: 5px;
+        }
+        .page { display: none; }
+        .active-page { display: block; }
+        #login-page {
+            text-align: center;
+            padding-top: 100px;
+        }
+        .login-form input {
+            width: 90%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;
+        }
+        .login-form button {
+            background-color: var(--primary); color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em; width: 90%;
+        }
+        .status-button-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            flex-wrap: wrap; 
+            gap: 15px; 
+        }
+        .status-button {
+            flex: 1;
+            min-width: 140px; 
+            margin: 0 5px;
+            padding: 30px 10px; 
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em; 
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .status-button:hover { transform: scale(1.05); }
+        #pending-btn { background-color: #ff9800; }
+        #done-btn { background-color: var(--success); }
+        #action-list-btn { background-color: var(--action-color); } 
+        #urgent-list-btn { background-color: var(--urgent-color); }
+        #fabric-list-btn { background-color: var(--fabric-color); } 
+        .task-list { list-style: none; padding: 0; margin-top: 20px; }
+        .task-item {
+            background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; padding: 15px; display: flex; flex-direction: column; position: relative; border-left: 5px solid transparent;
+        }
+        .task-item.stuck { background-color: #ffebee; border-left-color: var(--danger); }
+        .task-item.done { border-left-color: var(--success); }
+        .task-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .item-details { display: flex; gap: 15px; align-items: center; }
+        .item-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #eee; 
+            background-color: #f0f0f0; 
+        }
+        .item-info { flex-grow: 1; }
+        .item-info p { margin: 3px 0; font-size: 0.9em; }
+        .item-info .title { font-weight: bold; font-size: 1.1em; color: var(--primary); }
+        .done-date { color: var(--success); font-weight: bold; font-size: 0.85em; margin-bottom: 5px; }
+        .task-actions { 
+            display: flex; 
+            justify-content: space-between;
+            gap: 10px; 
+            margin-top: 10px; 
+            flex-wrap: wrap; 
+        }
+        .action-btn { 
+            padding: 8px 10px; 
+            border: none; 
+            border-radius: 5px; 
+            color: white; 
+            cursor: pointer; 
+            font-size: 1.0em; 
+            flex: 1; 
+            min-width: 80px; 
+            text-align: center;
+        }
+        .action-tick { background-color: var(--success); }
+        .action-cross { background-color: var(--danger); }
+        .pending-cutout-btn {
+            background-color: #c0392b; 
+        }
+        .action-item, .urgent-item {
+            background-color: #e3f2fd;
+            border-left-color: var(--action-color);
+        }
+        .action-item .task-actions, .urgent-item .task-actions {
+            justify-content: flex-end; 
+        }
+        .action-item .task-actions .action-btn, .urgent-item .task-actions .action-btn {
+            flex: 0 1 auto;
+        }
+        .urgent-item {
+             background-color: #fff3e0;
+             border-left-color: var(--urgent-color);
+        }
+        .action-item .bill-number-display, .urgent-item .bill-number-display {
+            font-size: 1.4em; 
+            font-weight: bold;
+            color: var(--action-color);
+            margin-bottom: 5px;
+        }
+        .urgent-item .bill-number-display { color: var(--urgent-color); }
+        .action-item .mobile-number-display, .urgent-item .mobile-number-display {
+            font-size: 1.1em; color: #555;
+        }
+        .action-item .description-display, .urgent-item .description-display {
+            font-style: italic; font-size: 0.9em; color: #777; margin-top: 10px; white-space: pre-wrap;
+        }
+        .action-item .item-details, .urgent-item .item-details {
+            flex-direction: column; align-items: flex-start; flex-grow: 1;
+        }
+        .action-item .settings-btn, .urgent-item .settings-btn { display: block; } 
+        .action-item.stuck, .urgent-item.stuck {
+            background-color: #ffcdd2; border-left-color: var(--danger);
+        }
+        .action-item .action-btn.action-tick, .urgent-item .action-btn.action-tick {
+            background-color: var(--danger); color: white;
+        }
+        .fabric-item {
+            border-left-color: var(--fabric-color);
+        }
+        .fabric-item .item-info .title {
+            color: var(--fabric-color); 
+        }
+        .fabric-item .fabric-actions {
+            display: flex;
+            justify-content: space-between; 
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .fabric-cutout-btn {
+            background-color: var(--danger);
+            flex: 1; 
+        }
+        .fabric-add-qty-btn {
+            background-color: var(--action-color); 
+            flex: 1; 
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            gap: 10px;
+        }
+        .page-header .back-to-home, .page-header .page-create-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            min-width: 70px; 
+            text-align: center;
+            flex-shrink: 0; 
+        }
+        .page-header #open-action-modal-btn { background: var(--action-color); }
+        .page-header #open-urgent-modal-btn { background: var(--urgent-color); }
+        .page-header #open-fabric-modal-btn { background: var(--fabric-color); } 
+        .page-search-bar {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            min-width: 50px; 
+        }
+        .modal {
+            display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe; margin: 5% auto; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative;
+        }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .create-form input, .create-form textarea {
+            width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
+        }
+        .image-upload-options {
+            display: flex; gap: 10px; margin-bottom: 10px;
+        }
+        .image-upload-options button, .image-upload-options label {
+            flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; text-align: center; cursor: pointer; background-color: #f9f9f9;
+        }
+        #item-image-upload, #fabric-image-upload { display: none; } 
+        #image-preview, #fabric-image-preview { 
+            width: 100px; height: 100px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px; display: none;
+        }
+        .bill-input-group { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
+        #add-bill-btn, #add-edit-bill-btn { 
+            background-color: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; 
+        }
+        .create-form button[type="submit"] { background-color: var(--primary); color: white; padding: 10px; border: none; border-radius: 5px; width: 100%; cursor: pointer; margin-top: 10px; }
+        .settings-popup {
+            position: absolute; top: 35px; right: 15px; background: white; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 5; display: none; min-width: 150px;
+        }
+        .settings-popup button { 
+            display: block; width: 100%; padding: 10px; text-align: left; background: none; border: none; cursor: pointer; border-bottom: 1px solid #eee; 
+            font-size: 0.9em;
+        }
+        .settings-btn { background: none; border: none; font-size: 1.1em; cursor: pointer; color: #666; padding: 0; position: absolute; top: 15px; right: 15px; }
+        #camera-modal .modal-content { max-width: 95%; padding: 5px; }
+        #camera-feed { width: 100%; height: auto; border-radius: 8px; background-color: #111; }
+        .camera-controls { display: flex; justify-content: space-around; align-items: center; margin-top: 10px; }
+        .camera-controls button { font-size: 1.2em; padding: 15px; border-radius: 50%; border: none; cursor: pointer; }
+        #capture-btn { background-color: var(--danger); color: white; }
+        #switch-camera-btn { background-color: var(--secondary); }
+        #image-popup-modal { background-color: rgba(0,0,0,0.8); padding-top: 20px; }
+        #image-popup-modal .modal-content { background: none; box-shadow: none; padding: 0; width: 90%; max-width: 800px; }
+        #popup-image-src { width: 100%; height: auto; border-radius: 8px; }
+        #share-image-btn { background-color: var(--success); color: white; border: none; padding: 12px 20px; font-size: 1.1em; border-radius: 5px; cursor: pointer; display: block; width: 100%; margin-top: 15px; }
+        .close-popup-btn { color: white; font-size: 40px; position: absolute; top: 15px; right: 35px; cursor: pointer; }
+        #fabric-history-list {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #fabric-history-list li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        #fabric-history-list li:last-child { border-bottom: none; }
+        #fabric-history-list .log-cut { color: var(--danger); }
+        #fabric-history-list .log-add, #fabric-history-list .log-create { color: var(--success); }
+        #fabric-history-list .log-date {
+            font-size: 0.8em;
+            color: #666;
+            display: block;
+        }
+        #fabric-history-list .log-bill {
+            font-size: 0.9em;
+            font-style: italic;
+            color: #333;
+        }
+        #pending-fabric-modal-list .task-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #pending-fabric-modal-list .task-item:hover {
+            background-color: #f1f1f1;
+        }
+        #pending-fabric-modal-list .fabric-actions { display: none; } 
+        #pending-fabric-modal-list .settings-btn { display: none; } 
+    </style>
+</head>
+<body>
+
+    <header id="main-header">
+        <button id="logout-btn" style="display: none;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        <span id="app-title">Royal Sherwani</span>
+        <button id="create-btn" style="display: none;"><i class="fas fa-plus-circle"></i> Item</button>
+    </header>
+
+    <div class="container">
+        <div id="app-pages">
+            <div id="login-page" class="page active-page">
+                <h1>Welcome to Royal Sherwani</h1>
+                <form id="login-form" class="login-form">
+                    <input type="email" id="login-email" placeholder="Email" required>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+
+            <div id="home-page" class="page">
+                <div class="status-button-container">
+                    <button id="pending-btn" class="status-button"><i class="fas fa-hourglass-half"></i> Pending <span id="pending-count"></span></button>
+                    <button id="done-btn" class="status-button"><i class="fas fa-check-circle"></i> Done <span id="done-count"></span></button>
+                    <button id="action-list-btn" class="status-button"><i class="fas fa-bolt"></i> Actions <span id="action-count"></span></button>
+                    <button id="urgent-list-btn" class="status-button"><i class="fas fa-exclamation-triangle"></i> Urgent <span id="urgent-count"></span></button>
+                    <button id="fabric-list-btn" class="status-button"><i class="fas fa-scroll"></i> Fabric <span id="fabric-count"></span></button>
+                </div>
+            </div>
+
+            <div id="pending-list-page" class="page">
+                <div class="page-header">
+                    <button class="back-to-home"><i class="fas fa-arrow-left"></i> Back</button>
+                    <input type="search" id="pending-search" class="page-search-bar" placeholder="Search Pendings (Bill, Name)...">
+                </div>
+                <ul id="pending-list" class="task-list"></ul>
+            </div>
+            
+            <div id="done-list-page" class="page">
+                <div class="page-header">
+                    <button class="back-to-home"><i class="fas fa-arrow-left"></i> Back</button>
+                    <input type="search" id="done-search" class="page-search-bar" placeholder="Search Done (Bill, Name)...">
+                </div>
+                <ul id="done-list" class="task-list"></ul>
+            </div>
+
+            <div id="action-list-page" class="page">
+                <div class="page-header">
+                    <button class="back-to-home"><i class="fas fa-arrow-left"></i> Back</button>
+                    <input type="search" id="action-search" class="page-search-bar" placeholder="Search Actions (Bill, Mobile)...">
+                    <button id="open-action-modal-btn" class="page-create-btn"><i class="fas fa-bolt"></i> Create</button>
+                </div>
+                <ul id="action-list" class="task-list"></ul>
+            </div>
+            
+            <div id="urgent-list-page" class="page">
+                <div class="page-header">
+                    <button class="back-to-home"><i class="fas fa-arrow-left"></i> Back</button>
+                    <input type="search" id="urgent-search" class="page-search-bar" placeholder="Search Urgent (Bill, Mobile)...">
+                    <button id="open-urgent-modal-btn" class="page-create-btn"><i class="fas fa-exclamation-triangle"></i> Create</button>
+                </div>
+                <ul id="urgent-list" class="task-list"></ul>
+            </div>
+            
+            <div id="fabric-list-page" class="page">
+                <div class="page-header">
+                    <button class="back-to-home"><i class="fas fa-arrow-left"></i> Back</button>
+                    <input type="search" id="fabric-search" class="page-search-bar" placeholder="Search Fabric (Name)...">
+                    <button id="open-fabric-modal-btn" class="page-create-btn"><i class="fas fa-scroll"></i> Create</button>
+                </div>
+                <ul id="fabric-list" class="task-list"></ul>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="create-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Create New Item Order</h3>
+            <form id="create-task-form" class="create-form">
+                
+                <div class="image-upload-options">
+                    <label for="item-image-upload"><i class="fas fa-upload"></i> Upload Image</label>
+                    <input type="file" id="item-image-upload" accept="image/*">
+                    <button type="button" id="open-camera-btn-item"><i class="fas fa-camera"></i> Take Photo</button>
+                </div>
+                <img id="image-preview" src="" alt="Image Preview">
+                
+                <input type="text" id="item-name" placeholder="Item Name (Optional)">
+                <input type="number" id="item-quantity" placeholder="Quantity" min="1" required>
+                <input type="date" id="item-date" title="Due Date" required>
+                <textarea id="item-description" placeholder="Description (Optional)" rows="2"></textarea>
+                <h4>Associate Bills (Optional, Numerical)</h4>
+                <div id="bill-numbers-container">
+                    <div class="bill-input-group">
+                        <input type="number" class="bill-input" placeholder="Bill Number 1">
+                    </div>
+                </div>
+                <button type="button" id="add-bill-btn">+ Add More Bill</button>
+                <button type="submit" id="save-task-btn">Save Order</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="create-action-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Create New Action Order</h3>
+            <form id="create-action-form" class="create-form">
+                <input type="number" id="action-bill-number" placeholder="Bill Number" required>
+                <input type="tel" id="action-mobile-number" placeholder="Mobile Number (Optional)">
+                <textarea id="action-description" placeholder="Description (Required)" rows="3" required></textarea>
+                <button type="submit" id="save-action-btn">Save Action</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="create-urgent-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Create New Urgent Order</h3>
+            <form id="create-urgent-form" class="create-form">
+                <input type="number" id="urgent-bill-number" placeholder="Bill Number" required>
+                <input type="tel" id="urgent-mobile-number" placeholder="Mobile Number (Optional)">
+                <textarea id="urgent-description" placeholder="Description (Required)" rows="3" required></textarea>
+                <button type="submit" id="save-urgent-btn" style="background: var(--urgent-color);">Save Urgent</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Edit Item Order</h3>
+            <form id="edit-task-form" class="create-form">
+                
+                <input type="hidden" id="edit-task-id">
+                <p style="font-size: 0.9em; color: #555; text-align: center;"><i>(Image/Photo ko edit karne ke liye, naya order banayein.)</i></p>
+                <label for="edit-item-name">Item Name (Optional)</label>
+                <input type="text" id="edit-item-name" placeholder="Item Name (Optional)">
+                <label for="edit-item-quantity">Quantity</label>
+                <input type="number" id="edit-item-quantity" placeholder="Quantity" min="1" required>
+                <label for="edit-item-date">Due Date</label>
+                <input type="date" id="edit-item-date" title="Due Date" required>
+                <label for="edit-item-description">Description (Optional)</label>
+                <textarea id="edit-item-description" placeholder="Description (Optional)" rows="2"></textarea>
+                <h4>Associate Bills (Optional, Numerical)</h4>
+                <div id="edit-bill-numbers-container"></div>
+                <button type="button" id="add-edit-bill-btn">+ Add More Bill</button>
+                <button type="submit" id="update-task-btn">Update Order</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-action-urgent-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3 id="edit-action-urgent-title">Edit Item</h3>
+            <form id="edit-action-urgent-form" class="create-form">
+                <input type="hidden" id="edit-action-urgent-id">
+                <input type="hidden" id="edit-action-urgent-type"> <label for="edit-action-urgent-bill">Bill Number</label>
+                <input type="number" id="edit-action-urgent-bill" placeholder="Bill Number" required>
+                <label for="edit-action-urgent-mobile">Mobile Number (Optional)</label>
+                <input type="tel" id="edit-action-urgent-mobile" placeholder="Mobile Number (Optional)">
+                <label for="edit-action-urgent-desc">Description</label>
+                <textarea id="edit-action-urgent-desc" placeholder="Description (Required)" rows="3" required></textarea>
+                <button type="submit" id="update-action-urgent-btn">Update</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="create-fabric-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Create New Fabric</h3>
+            <form id="create-fabric-form" class="create-form">
+                <div class="image-upload-options">
+                    <label for="fabric-image-upload"><i class="fas fa-upload"></i> Upload Image</label>
+                    <input type="file" id="fabric-image-upload" accept="image/*">
+                    <button type="button" id="open-camera-btn-fabric"><i class="fas fa-camera"></i> Take Photo</button>
+                </div>
+                <img id="fabric-image-preview" src="" alt="Fabric Preview">
+                
+                <label for="fabric-item-name">Fabric Name</label>
+                <input type="text" id="fabric-item-name" placeholder="Fabric Name" required>
+                
+                <label for="fabric-quantity">Initial Quantity (meters/units)</label>
+                <input type="number" id="fabric-quantity" placeholder="Quantity" min="0" step="0.01" required>
+                
+                <label for="fabric-description">Description (Optional)</label>
+                <textarea id="fabric-description" placeholder="Description (Optional)" rows="2"></textarea>
+                
+                <button type="submit" id="save-fabric-btn" style="background: var(--fabric-color);">Save Fabric</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-fabric-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Edit Fabric Details</h3>
+            <form id="edit-fabric-form" class="create-form">
+                <input type="hidden" id="edit-fabric-id">
+                <p style="font-size: 0.9em; color: #555; text-align: center;"><i>(Image aur Quantity ko yahan se edit nahi kar sakte. Quantity ke liye 'Add/Cut' buttons use karein.)</i></p>
+                <label for="edit-fabric-item-name">Fabric Name</label>
+                <input type="text" id="edit-fabric-item-name" placeholder="Fabric Name" required>
+                <label for="edit-fabric-description">Description (Optional)</label>
+                <textarea id="edit-fabric-description" placeholder="Description (Optional)" rows="2"></textarea>
+                <button type="submit" id="update-fabric-btn" style="background: var(--fabric-color);">Update Details</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="fabric-cutout-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Cut from Stock</h3>
+            <form id="fabric-cutout-form" class="create-form">
+                <input type="hidden" id="cutout-fabric-id">
+                <label for="cutout-bill-number">Bill Number (Optional)</label>
+                <input type="text" id="cutout-bill-number" placeholder="Bill Number">
+                <label for="cutout-quantity">Quantity to Cut</label>
+                <input type="number" id="cutout-quantity" placeholder="Quantity" min="0.01" step="0.01" required>
+                <button type="submit" id="save-cutout-btn" style="background: var(--danger);">Cut Quantity</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="fabric-add-quantity-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Add to Stock</h3>
+            <form id="fabric-add-quantity-form" class="create-form">
+                <input type="hidden" id="add-qty-fabric-id">
+                <label for="add-quantity">Quantity to Add</label>
+                <input type="number" id="add-quantity" placeholder="Quantity" min="0.01" step="0.01" required>
+                <button type="submit" id="save-add-qty-btn" style="background: var(--action-color);">Add Quantity</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="fabric-history-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3 id="fabric-history-title">Stock History</h3>
+            <ul id="fabric-history-list">
+                </ul>
+        </div>
+    </div>
+
+
+    <div id="camera-modal" class="modal">
+        <div class="modal-content">
+            <video id="camera-feed" autoplay playsinline></video>
+            <canvas id="camera-canvas" style="display: none;"></canvas>
+            <div class="camera-controls">
+                <button id="close-camera-btn" title="Close"><i class="fas fa-times"></i></button>
+                <button id="capture-btn" title="Capture"><i class="fas fa-camera"></i></button>
+                <button id="switch-camera-btn" title="Switch Camera"><i class="fas fa-sync-alt"></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="image-popup-modal" class="modal">
+        <span class="close-popup-btn">&times;</span>
+        <div class="modal-content">
+            <img id="popup-image-src" src="" alt="Full Size Image">
+            <button id="share-image-btn"><i class="fas fa-share-alt"></i> Share Image</button>
+        </div>
+    </div>
+
+    <div id="pending-fabric-selection-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Select Fabric for CutOut</h3>
+            <input type="search" id="pending-fabric-modal-search" placeholder="Search Fabric..." class="page-search-bar" style="width: 100%; margin: 0 0 10px 0; box-sizing: border-box;">
+            <input type="hidden" id="pending-fabric-selection-task-id">
+            <ul id="pending-fabric-modal-list" class="task-list" style="max-height: 40vh; overflow-y: auto; margin-top: 0;">
+                </ul>
+        </div>
+    </div>
+
+    <div id="pending-cutout-confirmation-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Confirm CutOut</h3>
+            <form id="pending-cutout-confirmation-form" class="create-form">
+                <input type="hidden" id="confirm-cutout-task-id">
+                <input type="hidden" id="confirm-cutout-fabric-id">
+                
+                <p><strong>Order:</strong> <span id="confirm-order-details" style="font-weight: normal;"></span></p>
+                <p><strong>Fabric:</strong> <span id="confirm-fabric-details" style="font-weight: normal;"></span></p>
+                <p><strong>Available:</strong> <span id="confirm-fabric-available" style="font-weight: bold; color: var(--fabric-color);"></span></p>
+                
+                <hr>
+                
+                <label for="confirm-cutout-quantity">Quantity to Cut (meters)</label>
+                <input type="number" id="confirm-cutout-quantity" placeholder="Quantity" min="0.01" step="0.01" required>
+                
+                <label for="confirm-cutout-bill" style="margin-top: 10px; display: block;">Bill Number (for Fabric History)</label>
+                <input type="text" id="confirm-cutout-bill" placeholder="e.g., 12345 (from order)">
+
+                <button type="submit" id="save-pending-cutout-btn" style="background: var(--danger); font-size: 1.1em; margin-top: 15px;">
+                    <i class="fas fa-cut"></i> Confirm & Move to Done
+                </button>
+            </form>
+        </div>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const SUPABASE_URL = "https://vuczcdgctejuhztskrtb.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1Y3pjZGdjdGVqdWh6dHNrcnRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNjcyODQsImV4cCI6MjA3Nzk0MzI4NH0.ZpJQcMFuucDp0MAodKZjd1SM1ySJjvowcS_vL6kF8Yo";
+
+        let supabase;
+        
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch (e) {
+            console.error("Supabase initialization failed:", e);
+            alert("Error: Supabase load nahi ho paya. Page refresh karke try karein.");
+            return;
+        }
+
+        const placeholderImg = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22120%22%20height%3D%22120%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%20120%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_18e10d21e88%20text%20%7B%20fill%3A%23AAAAAA%3Bfont-weight%3Abold%3Bfont-family%3AArial%2C%20Helvetica%2C%20Open%20Sans%2C%20sans-serif%2C%20monospace%3Bfont-size%3A10pt%20%7D%20%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder_18e10d21e88%22%3E%3Crect%20width%3D%22120%22%20height%3D%22120%22%20fill%3D%22%23EEEEEE%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%2234.3046875%22%20y%3D%2264.5%22%3EImage%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E';
+
+        // Global variables
+        let currentView = '';
+        let allTasksCacheWithUrls = []; 
+        let allActionsCache = [];
+        let allUrgentsCache = [];
+        let allFabricsCacheWithUrls = []; 
+        
+        // Camera/Image variables
+        let currentStream; 
+        let videoDevices = []; 
+        let currentDeviceIndex = 0; 
+        let capturedImageFile = null; 
+        let currentCameraTrigger = null; 
+        const cameraModal = document.getElementById('camera-modal');
+        const cameraFeed = document.getElementById('camera-feed');
+        const cameraCanvas = document.createElement('canvas'); 
+        
+        const itemImagePreview = document.getElementById('image-preview');
+        const fabricImagePreview = document.getElementById('fabric-image-preview');
+        const itemFileUploadInput = document.getElementById('item-image-upload');
+        const fabricFileUploadInput = document.getElementById('fabric-image-upload');
+        
+        const imagePopupModal = document.getElementById('image-popup-modal');
+        const popupImageSrc = document.getElementById('popup-image-src');
+        
+        const createModal = document.getElementById('create-modal');
+        const createActionModal = document.getElementById('create-action-modal');
+        const createUrgentModal = document.getElementById('create-urgent-modal'); 
+        const editModal = document.getElementById('edit-modal'); 
+        const editActionUrgentModal = document.getElementById('edit-action-urgent-modal');
+        
+        const createFabricModal = document.getElementById('create-fabric-modal');
+        const editFabricModal = document.getElementById('edit-fabric-modal');
+        const fabricCutOutModal = document.getElementById('fabric-cutout-modal');
+        const fabricAddQtyModal = document.getElementById('fabric-add-quantity-modal');
+        const fabricHistoryModal = document.getElementById('fabric-history-modal');
+
+        const pendingFabricSelectionModal = document.getElementById('pending-fabric-selection-modal');
+        const pendingCutoutConfirmationModal = document.getElementById('pending-cutout-confirmation-modal');
+        
+
+        // --- Utility Functions (History & Navigation) ---
+        
+        function updateHistory(pageId, replace = false) {
+            const state = { page: pageId };
+            const title = `Royal Sherwani - ${pageId}`;
+            const url = `#${pageId}`; 
+            
+            if (replace) {
+                history.replaceState(state, title, url);
+            } else {
+                if (window.location.hash !== url) {
+                    history.pushState(state, title, url);
+                }
+            }
+        }
+        window.onpopstate = function(event) {
+            if (event.state && event.state.page) {
+                navigate(event.state.page, true); 
+            } else {
+                checkUser(true); 
+            }
+        };
+        
+        function navigate(pageId, fromHistory = false) {
+            const appPages = document.getElementById('app-pages');
+            if (!appPages) return;
+
+            appPages.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active-page');
+            });
+            
+            const newPage = document.getElementById(pageId);
+            if (newPage) {
+                newPage.classList.add('active-page');
+            } else {
+                document.getElementById('home-page').classList.add('active-page');
+                pageId = 'home-page';
+            }
+            
+            const isAppPage = (pageId !== 'login-page');
+            document.getElementById('logout-btn').style.display = isAppPage ? 'block' : 'none';
+            
+            const isHomePage = (pageId === 'home-page');
+            document.getElementById('create-btn').style.display = isHomePage ? 'block' : 'none';
+
+
+            if (!fromHistory) {
+                updateHistory(pageId);
+            }
+            currentView = pageId; 
+
+            const headerTitle = document.getElementById('app-title');
+            let title = "Royal Sherwani"; 
+            switch(pageId) {
+                case 'pending-list-page':
+                    title = "Pending Orders";
+                    break;
+                case 'done-list-page':
+                    title = "Done Orders";
+                    break;
+                case 'action-list-page':
+                    title = "Action Items";
+                    break;
+                case 'urgent-list-page':
+                    title = "Urgent Items";
+                    break;
+                case 'fabric-list-page':
+                    title = "Fabric Stock";
+                    break;
+            }
+            headerTitle.textContent = title;
+
+            if (pageId === 'home-page') {
+                fetchTasks();
+                fetchActions(); 
+                fetchUrgents();
+                fetchFabrics(); 
+            }
+            else if (pageId === 'pending-list-page' || pageId === 'done-list-page') {
+                fetchTasks();
+            } 
+            else if (pageId === 'action-list-page') {
+                fetchActions();
+            }
+            else if (pageId === 'urgent-list-page') {
+                fetchUrgents();
+            }
+            else if (pageId === 'fabric-list-page') { 
+                fetchFabrics();
+            }
+        }
+
+        function showMessage(msg, isError = false) {
+            alert(msg);
+            if (isError) console.error(msg);
+            else console.log(msg);
+        }
+        function dataURLtoBlob(dataurl) {
+            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], {type:mime});
+        }
+
+        // --- Camera Functions ---
+        async function startCamera(trigger, deviceId = null) {
+             currentCameraTrigger = trigger; 
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+                let constraints;
+                if (deviceId) {
+                    constraints = { video: { deviceId: { exact: deviceId } } };
+                } else {
+                    if (videoDevices.length === 0) {
+                        try {
+                            const devices = await navigator.mediaDevices.enumerateDevices();
+                            videoDevices = devices.filter(d => d.kind === 'videoinput');
+                        } catch (e) { console.error("Could not enumerate devices:", e); }
+                    }
+                    const backCamera = videoDevices.find(d => d.label.toLowerCase().includes('back'));
+                    currentDeviceIndex = backCamera ? videoDevices.indexOf(backCamera) : 0;
+                    if (videoDevices.length > 0) {
+                        constraints = { video: { deviceId: { exact: videoDevices[currentDeviceIndex].deviceId } } };
+                    } else {
+                        constraints = { video: { facingMode: 'environment' } }; 
+                    }
+                }
+                try {
+                    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    cameraFeed.srcObject = currentStream;
+                    cameraModal.style.display = 'block';
+                    if (videoDevices.length === 0) { 
+                         const devices = await navigator.mediaDevices.enumerateDevices();
+                         videoDevices = devices.filter(d => d.kind === 'videoinput');
+                         const currentTrack = currentStream.getVideoTracks()[0];
+                         const currentDeviceId = currentTrack.getSettings().deviceId;
+                         currentDeviceIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId) || 0;
+                    }
+                } catch (err) {
+                    console.error("Camera error:", err);
+                    if (!deviceId) {
+                        console.log("Falling back to default camera (any)...");
+                        try {
+                            constraints = { video: true }; 
+                            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                            cameraFeed.srcObject = currentStream;
+                            cameraModal.style.display = 'block';
+                            if (videoDevices.length === 0) { 
+                                const devices = await navigator.mediaDevices.enumerateDevices();
+                                videoDevices = devices.filter(d => d.kind === 'videoinput');
+                            }
+                            currentDeviceIndex = 0;
+                        } catch (fallbackErr) {
+                             console.error("Fallback camera error:", fallbackErr);
+                             showMessage("Camera open nahi ho paya. Ensure karein ki aap HTTPS par hain aur permission di hai.", true);
+                             if (currentCameraTrigger === 'item') createModal.style.display = 'block';
+                             else if (currentCameraTrigger === 'fabric') createFabricModal.style.display = 'block';
+                        }
+                    }
+                }
+        }
+        function stopCamera() {
+             if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+                cameraModal.style.display = 'none';
+        }
+        function switchCamera() {
+             if (videoDevices.length > 1) {
+                    currentDeviceIndex = (currentDeviceIndex + 1) % videoDevices.length;
+                    startCamera(currentCameraTrigger, videoDevices[currentDeviceIndex].deviceId);
+                } else {
+                    showMessage("Aapke paas switch karne ke liye doosra camera nahi hai.", true);
+                }
+        }
+        function captureImage() {
+             const context = cameraCanvas.getContext('2d');
+                cameraCanvas.width = cameraFeed.videoWidth;
+                cameraCanvas.height = cameraFeed.videoHeight;
+                context.drawImage(cameraFeed, 0, 0, cameraCanvas.width, cameraCanvas.height);
+                
+                const dataUrl = cameraCanvas.toDataURL('image/jpeg');
+                const blob = dataURLtoBlob(dataUrl);
+                capturedImageFile = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                
+                if (currentCameraTrigger === 'item') {
+                    itemFileUploadInput.value = "";
+                    itemImagePreview.src = dataUrl;
+                    itemImagePreview.style.display = 'block';
+                    stopCamera();
+                    createModal.style.display = 'block';
+                } else if (currentCameraTrigger === 'fabric') {
+                    fabricFileUploadInput.value = "";
+                    fabricImagePreview.src = dataUrl;
+                    fabricImagePreview.style.display = 'block';
+                    stopCamera();
+                    createFabricModal.style.display = 'block';
+                }
+        }
+
+        // --- Core Supabase Functions (Login, Logout, etc.) ---
+        async function checkUser(replaceHistory = false) {
+             const { data: { user } } = await supabase.auth.getUser();
+                const hash = window.location.hash.replace('#', '');
+                
+                if (SUPABASE_URL.includes("[") || SUPABASE_ANON_KEY.includes("[")) {
+                     showMessage("ERROR: Supabase URL ya Key nahi daali gayi hai. Please script.js mein update karein.", true);
+                     return;
+                }
+            
+                if (user) {
+                    if (hash && document.getElementById(hash) && hash !== 'login-page') {
+                        navigate(hash, true); 
+                    } else {
+                        navigate('home-page', true); 
+                    }
+                } else {
+                    navigate('login-page', true); 
+                }
+        }
+        async function handleLogin(e) {
+             e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                let { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) {
+                    if (error.message.includes('Invalid login')) {
+                        if (confirm("User nahi mila. Kya aap naya account (Sign Up) banana chahte hain?")) {
+                            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
+                            if (signUpError) { showMessage(`Signup Failed: ${signUpError.message}`, true); return; }
+                            if (signUpData.user) checkUser(true); 
+                        }
+                    } else { showMessage(`Login Failed: ${error.message}`, true); }
+                } else if (data.user) {
+                    checkUser(true); 
+                }
+        }
+        async function handleLogout() {
+             await supabase.auth.signOut();
+             navigate('login-page', true); 
+        }
+
+        // --- Task (Item Order) Functions ---
+        
+        // ** DEBUG CODE REMOVED **
+        async function getSignedUrl(bucket, imagePath) {
+             if (!imagePath) return ''; 
+             let path = imagePath;
+             if (imagePath.startsWith('http')) {
+                try {
+                    const url = new URL(imagePath);
+                    const pathSegments = url.pathname.split('/');
+                    path = pathSegments.slice(pathSegments.indexOf(bucket) + 1).join('/');
+                } catch (e) {
+                    console.error("Invalid URL in database:", imagePath);
+                    return ''; 
+                }
+             }
+             const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600); 
+             
+             if (error) {
+                // Hum error ko console mein dikhayenge, par popup nahi dikhayenge
+                console.error(`Error generating signed URL for ${bucket}/${path}:`, error.message);
+                return ''; 
+             }
+             return data.signedUrl;
+        }
+
+        async function fetchTasks() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data, error } = await supabase.from('tasks').select('*').eq('user_id', user.id).order('due_date', { ascending: true });
+            if (error) { showMessage(`Error fetching tasks: ${error.message}`, true); return; }
+            
+            const tasksWithSignedUrls = await Promise.all(
+                data.map(async (task) => {
+                    task.signed_image_url = await getSignedUrl('task_images', task.image_url);
+                    return task;
+                })
+            );
+            
+            allTasksCacheWithUrls = tasksWithSignedUrls;
+            
+            const pendingTasks = allTasksCacheWithUrls.filter(task => task.status === 'pending');
+            const doneTasks = allTasksCacheWithUrls.filter(task => task.status === 'done');
+            
+            if (document.getElementById('pending-count')) document.getElementById('pending-count').textContent = `(${pendingTasks.length})`;
+            if (document.getElementById('done-count')) document.getElementById('done-count').textContent = `(${doneTasks.length})`;
+            
+            renderTaskList(pendingTasks, 'pending-list');
+            renderTaskList(doneTasks, 'done-list');
+        }
+
+        function renderTaskList(tasks, elementId) {
+            const listElement = document.getElementById(elementId);
+            if (!listElement) return;
+            listElement.innerHTML = '';
+            tasks.forEach(task => {
+                const isPending = task.status === 'pending';
+                const isStuck = task.is_stuck;
+                const listItem = document.createElement('li');
+                listItem.className = `task-item ${isStuck ? 'stuck' : ''} ${!isPending ? 'done' : ''}`;
+                listItem.dataset.taskId = task.id;
+                let doneDateHtml = '';
+                if (!isPending && task.done_at) {
+                    doneDateHtml = `<p class="done-date"><i class="fas fa-check"></i> Done on: ${new Date(task.done_at).toLocaleDateString()}</p>`;
+                }
+                let billNumbersDisplay = '';
+                let billNumbersArray = []; 
+                if (task.bill_numbers && task.bill_numbers.length > 0) {
+                    const bills = Array.isArray(task.bill_numbers) ? task.bill_numbers.filter(b => b && b.trim() !== '') : [];
+                    if(bills.length > 0) {
+                        billNumbersArray = bills;
+                        billNumbersDisplay = `<p style="font-size: 0.8em; color: #6c757d;">Bills: ${bills.join(', ')}</p>`;
+                    }
+                }
+                
+                let pendingActionsHtml = '';
+                if (isPending) {
+                    pendingActionsHtml = `
+                        <div class="task-actions">
+                            <button class="action-btn action-cross toggle-stuck-btn" data-task-id="${task.id}" data-is-stuck="${!isStuck}">
+                                <i class="fas fa-times"></i> ${isStuck ? 'Unmark' : 'Stuck'}
+                            </button>
+                            <button class="action-btn action-tick complete-task-btn" data-task-id="${task.id}">
+                                <i class="fas fa-check"></i> Done
+                            </button>
+                            <button class="action-btn pending-cutout-btn" data-task-id="${task.id}">
+                                <i class="fas fa-cut"></i> CutOut
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                listItem.innerHTML = `
+                    <div class="task-header">
+                        <div class="item-details">
+                            <img src="${task.signed_image_url || placeholderImg}" alt="Item Image" class="item-image">
+                            <div class="item-info">
+                                ${doneDateHtml}
+                                <p class="title">${task.item_name || 'N/A'}</p>
+                                <p><i class="fas fa-box"></i> Quantity: <strong>${task.quantity}</strong></p>
+                                <p><i class="fas fa-calendar-alt"></i> Date: ${new Date(task.due_date).toLocaleDateString()}</p>
+                                ${billNumbersDisplay}
+                                ${task.description ? `<p style="font-style: italic; font-size: 0.85em;">Desc: ${task.description}</p>` : ''}
+                            </div>
+                        </div>
+                        <button class="settings-btn" data-task-id="${task.id}" data-type="task"><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div class="settings-popup" id="settings-task-${task.id}">
+                        <button class="edit-task-btn" data-task-id="${task.id}"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="delete-task-btn" data-task-id="${task.id}"><i class="fas fa-trash-alt"></i> Delete</button>
+                        ${isPending 
+                            ? `<button class="transfer-task-btn" data-task-id="${task.id}" data-new-status="done"><i class="fas fa-exchange-alt"></i> Transfer to Done</button>` 
+                            : `<button class="transfer-task-btn" data-task-id="${task.id}" data-new-status="pending"><i class="fas fa-exchange-alt"></i> Transfer to Pending</button>`
+                        }
+                    </div>
+                    ${pendingActionsHtml} `;
+                listElement.appendChild(listItem);
+            });
+        }
+        
+        async function handleCreateTask(e) {
+             e.preventDefault();
+                const imageFile = itemFileUploadInput.files[0];
+                const finalImageFile = capturedImageFile || imageFile;
+                const name = document.getElementById('item-name').value;
+                const quantity = parseInt(document.getElementById('item-quantity').value);
+                const date = document.getElementById('item-date').value;
+                const description = document.getElementById('item-description').value;
+                const billInputs = document.querySelectorAll('#bill-numbers-container .bill-input');
+                const billNumbers = Array.from(billInputs).map(input => input.value.trim()).filter(val => val !== '');
+                if (!finalImageFile || !quantity || !date) { showMessage('Please fill all required fields (Image/Photo, Quantity, Date).', true); return; }
+                document.getElementById('save-task-btn').disabled = true;
+                let imagePath = ''; 
+                try {
+                    const fileName = `${Date.now()}-${finalImageFile.name}`;
+                    const { data, error } = await supabase.storage.from('task_images').upload(fileName, finalImageFile);
+                    if (error) throw error;
+                    imagePath = data.path; 
+                } catch (error) {
+                    showMessage(`Image Upload Error: ${error.message}`, true);
+                    document.getElementById('save-task-btn').disabled = false;
+                    return;
+                }
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const { error } = await supabase
+                        .from('tasks') 
+                        .insert([{ 
+                            user_id: user.id, image_url: imagePath, quantity: quantity, due_date: date,
+                            item_name: name || null, description: description || null,
+                            bill_numbers: billNumbers.length > 0 ? billNumbers : null,
+                            status: 'pending', is_stuck: false 
+                        }]);
+                    if (error) throw error;
+                    showMessage('Order created successfully!');
+                    createModal.style.display = 'none';
+                    document.getElementById('create-task-form').reset();
+                    itemImagePreview.style.display = 'none';
+                    capturedImageFile = null;
+                    document.getElementById('bill-numbers-container').innerHTML = `<div class="bill-input-group"><input type="number" class="bill-input" placeholder="Bill Number 1"></div>`;
+                    fetchTasks(); 
+                } catch (error) {
+                    showMessage(`Data Insert Error: ${error.message}`, true);
+                } finally {
+                    document.getElementById('save-task-btn').disabled = false;
+                }
+        }
+        function addMoreBill(containerId) {
+             const container = document.getElementById(containerId);
+                if (!container) return;
+                const newIndex = container.children.length + 1;
+                const newGroup = document.createElement('div');
+                newGroup.className = 'bill-input-group';
+                newGroup.innerHTML = `
+                    <input type="number" class="bill-input" placeholder="Bill Number ${newIndex}">
+                    <button type="button" class="remove-bill-btn" style="background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px;">X</button>
+                `;
+                container.appendChild(newGroup);
+                newGroup.querySelector('.remove-bill-btn').addEventListener('click', () => container.removeChild(newGroup));
+        }
+
+        async function completeTask(taskId) {
+             const { error } = await supabase.from('tasks').update({ status: 'done', done_at: new Date().toISOString() }).eq('id', taskId);
+                if (error) showMessage(`Error: ${error.message}`, true);
+                else fetchTasks();
+        }
+        async function toggleStuckTask(taskId, isStuckValue) {
+             const { error } = await supabase.from('tasks').update({ is_stuck: isStuckValue }).eq('id', taskId);
+                if (error) showMessage(`Error: ${error.message}`, true);
+                else fetchTasks();
+        }
+        async function transferTask(taskId, newStatus) {
+             const updates = { status: newStatus, is_stuck: false, done_at: newStatus === 'done' ? new Date().toISOString() : null };
+                const { error } = await supabase.from('tasks').update(updates).eq('id', taskId);
+                if (error) showMessage(`Error: ${error.message}`, true);
+                else fetchTasks();
+        }
+        async function deleteTask(taskId) {
+             if (!confirm('Are you sure you want to delete this order?')) return;
+                const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+                if (error) showMessage(`Error: ${error.message}`, true);
+                else fetchTasks();
+        }
+
+        function openEditModal(taskId) {
+            const task = allTasksCacheWithUrls.find(t => t.id == taskId); 
+            if (!task) { showMessage('Error: Task not found in cache.', true); return; }
+                document.getElementById('edit-task-id').value = task.id;
+                document.getElementById('edit-item-name').value = task.item_name || '';
+                document.getElementById('edit-item-quantity').value = task.quantity;
+                document.getElementById('edit-item-date').value = task.due_date;
+                document.getElementById('edit-item-description').value = task.description || '';
+                const billContainer = document.getElementById('edit-bill-numbers-container');
+                billContainer.innerHTML = ''; 
+                if (task.bill_numbers && task.bill_numbers.length > 0) {
+                    task.bill_numbers.forEach(bill => {
+                        if (bill && bill.trim() !== '') { 
+                            const newGroup = document.createElement('div');
+                            newGroup.className = 'bill-input-group';
+                            newGroup.innerHTML = `
+                                <input type="number" class="bill-input" value="${bill}">
+                                <button type="button" class="remove-bill-btn" style="background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px;">X</button>
+                            `;
+                            billContainer.appendChild(newGroup);
+                            newGroup.querySelector('.remove-bill-btn').addEventListener('click', () => billContainer.removeChild(newGroup));
+                        }
+                    });
+                } 
+                document.querySelectorAll('.settings-popup').forEach(p => p.style.display = 'none');
+                editModal.style.display = 'block';
+        }
+        async function handleUpdateTask(e) {
+             e.preventDefault();
+                const taskId = document.getElementById('edit-task-id').value;
+                const billInputs = document.querySelectorAll('#edit-bill-numbers-container .bill-input');
+                const billNumbers = Array.from(billInputs).map(input => input.value.trim()).filter(val => val !== '');
+                const updates = {
+                    item_name: document.getElementById('edit-item-name').value || null,
+                    quantity: parseInt(document.getElementById('edit-item-quantity').value),
+                    due_date: document.getElementById('edit-item-date').value,
+                    description: document.getElementById('edit-item-description').value || null,
+                    bill_numbers: billNumbers.length > 0 ? billNumbers : null
+                };
+                document.getElementById('update-task-btn').disabled = true;
+                try {
+                    const { error } = await supabase.from('tasks').update(updates).eq('id', taskId);
+                    if (error) throw error;
+                    showMessage('Order updated successfully!');
+                    editModal.style.display = 'none';
+                    fetchTasks(); 
+                } catch (error) {
+                    showMessage(`Update Error: ${error.message}`, true);
+                } finally {
+                    document.getElementById('update-task-btn').disabled = false;
+                }
+        }
+
+        // --- Action & Urgent Functions ---
+        async function fetchActions() {
+             const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                const { data, error } = await supabase.from('actions').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+                if (error) { showMessage(`Error fetching actions: ${error.message}`, true); return; }
+                allActionsCache = data; 
+                if (document.getElementById('action-count')) document.getElementById('action-count').textContent = `(${data.length})`;
+                renderActionUrgentList(data, 'action-list', 'actions'); 
+        }
+        async function fetchUrgents() {
+             const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                const { data, error } = await supabase.from('urgent').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+                if (error) { showMessage(`Error fetching urgents: ${error.message}`, true); return; }
+                allUrgentsCache = data; 
+                if (document.getElementById('urgent-count')) document.getElementById('urgent-count').textContent = `(${data.length})`;
+                renderActionUrgentList(data, 'urgent-list', 'urgent'); 
+        }
+        function renderActionUrgentList(items, elementId, type) { 
+             const listElement = document.getElementById(elementId);
+                if (!listElement) return;
+                listElement.innerHTML = '';
+                items.forEach(item => {
+                    const isStuck = item.is_stuck;
+                    const listItem = document.createElement('li');
+                    listItem.className = `task-item ${type.slice(0, -1)}-item ${isStuck ? 'stuck' : ''}`; 
+                    listItem.dataset.id = item.id; 
+                    listItem.dataset.type = type; 
+                    listItem.innerHTML = `
+                        <div class="task-header">
+                            <div class="item-details">
+                                <div class="bill-number-display">${item.bill_number}</div>
+                                <div class="mobile-number-display"><i class="fas fa-phone"></i> ${item.mobile_number || 'N/A'}</div>
+                                <p class="description-display">${item.description}</p>
+                            </div>
+                            <button class="settings-btn" data-id="${item.id}" data-type="${type}"><i class="fas fa-cog"></i></button>
+                        </div>
+                        <div class="settings-popup" id="settings-${type}-${item.id}">
+                            <button class="edit-action-urgent-btn" data-id="${item.id}" data-type="${type}"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="delete-action-urgent-btn" data-id="${item.id}" data-type="${type}"><i class="fas fa-trash-alt"></i> Delete</button>
+                        </div>
+                        <div class="task-actions">
+                            <button class="action-btn action-cross toggle-stuck-btn" data-id="${item.id}" data-type="${type}" data-is-stuck="${!isStuck}">
+                                <i class="fas fa-times"></i> ${isStuck ? 'Unmark' : 'Stuck'}
+                            </button>
+                            <button class="action-btn action-tick delete-action-urgent-btn" data-id="${item.id}" data-type="${type}">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        </div>
+                    `;
+                    listElement.appendChild(listItem);
+                });
+        }
+        async function handleCreateAction(e) {
+             e.preventDefault();
+                const billNumber = document.getElementById('action-bill-number').value;
+                const mobileNumber = document.getElementById('action-mobile-number').value;
+                const description = document.getElementById('action-description').value;
+                if (!billNumber || !description) { showMessage('Please fill all required fields.', true); return; }
+                document.getElementById('save-action-btn').disabled = true;
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const { error } = await supabase.from('actions').insert([{ user_id: user.id, bill_number: billNumber, mobile_number: mobileNumber || null, description: description, is_stuck: false }]);
+                    if (error) throw error;
+                    showMessage('Action created successfully!');
+                    createActionModal.style.display = 'none';
+                    document.getElementById('create-action-form').reset();
+                    fetchActions(); 
+                } catch (error) {
+                    showMessage(`Action Insert Error: ${error.message}`, true);
+                } finally {
+                    document.getElementById('save-action-btn').disabled = false;
+                }
+        }
+         async function handleCreateUrgent(e) {
+             e.preventDefault();
+                const billNumber = document.getElementById('urgent-bill-number').value;
+                const mobileNumber = document.getElementById('urgent-mobile-number').value;
+                const description = document.getElementById('urgent-description').value;
+                if (!billNumber || !description) { showMessage('Please fill all required fields.', true); return; }
+                document.getElementById('save-urgent-btn').disabled = true;
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const { error } = await supabase.from('urgent').insert([{ user_id: user.id, bill_number: billNumber, mobile_number: mobileNumber || null, description: description, is_stuck: false }]);
+                    if (error) throw error;
+                    showMessage('Urgent item created successfully!');
+                    createUrgentModal.style.display = 'none';
+                    document.getElementById('create-urgent-form').reset();
+                    fetchUrgents(); 
+                } catch (error) {
+                    showMessage(`Urgent Insert Error: ${error.message}`, true);
+                } finally {
+                    document.getElementById('save-urgent-btn').disabled = false;
+                }
+        }
+        async function toggleStuckActionUrgent(itemId, isStuckValue, type) { 
+             const { error } = await supabase.from(type).update({ is_stuck: isStuckValue }).eq('id', itemId);
+                if (error) {
+                    showMessage(`Error updating ${type}: ${error.message}`, true);
+                }
+                else (type === 'actions' ? fetchActions() : fetchUrgents());
+        }
+        async function deleteActionUrgent(itemId, type) {
+             if (!confirm(`Are you sure you want to delete this ${type} item? Yeh permanently delete ho jaayega.`)) return;
+                const { error } = await supabase.from(type).delete().eq('id', itemId);
+                if (error) {
+                    showMessage(`Error deleting ${type}: ${error.message}`, true);
+                }
+                else {
+                    showMessage(`${type} item deleted successfully!`);
+                    (type === 'actions' ? fetchActions() : fetchUrgents());
+                }
+        }
+        function openEditActionUrgentModal(itemId, type) {
+             const cache = (type === 'actions') ? allActionsCache : allUrgentsCache; 
+                const item = cache.find(t => t.id == itemId);
+                if (!item) { showMessage('Error: Item not found in cache.', true); return; }
+                document.getElementById('edit-action-urgent-id').value = item.id;
+                document.getElementById('edit-action-urgent-type').value = type; 
+                document.getElementById('edit-action-urgent-bill').value = item.bill_number;
+                document.getElementById('edit-action-urgent-mobile').value = item.mobile_number || '';
+                document.getElementById('edit-action-urgent-desc').value = item.description;
+                const title = (type === 'actions') ? 'Edit Action Item' : 'Edit Urgent Item'; 
+                const color = (type === 'actions') ? 'var(--action-color)' : 'var(--urgent-color)'; 
+                document.getElementById('edit-action-urgent-title').innerText = title;
+                document.getElementById('update-action-urgent-btn').style.background = color;
+                document.querySelectorAll('.settings-popup').forEach(p => p.style.display = 'none');
+                editActionUrgentModal.style.display = 'block';
+        }
+        async function handleUpdateActionUrgent(e) {
+             e.preventDefault();
+                const itemId = document.getElementById('edit-action-urgent-id').value;
+                const type = document.getElementById('edit-action-urgent-type').value; 
+                const updates = {
+                    bill_number: document.getElementById('edit-action-urgent-bill').value,
+                    mobile_number: document.getElementById('edit-action-urgent-mobile').value || null,
+                    description: document.getElementById('edit-action-urgent-desc').value
+                };
+                document.getElementById('update-action-urgent-btn').disabled = true;
+                try {
+                    const { error } = await supabase.from(type).update(updates).eq('id', itemId);
+                    if (error) throw error;
+                    showMessage(`${type} item updated successfully!`);
+                    editActionUrgentModal.style.display = 'none';
+                    (type === 'actions' ? fetchActions() : fetchUrgents()); 
+                } catch (error) {
+                    showMessage(`Update Error: ${error.message}`, true);
+                } finally {
+                    document.getElementById('update-action-urgent-btn').disabled = false;
+                }
+        }
+        
+        // --- Fabric Functions ---
+        
+        async function fetchFabrics() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const { data, error } = await supabase.from('fabric').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+            if (error) { showMessage(`Error fetching fabrics: ${error.message}`, true); return; }
+            
+            const fabricsWithUrls = await Promise.all(
+                data.map(async (fabric) => {
+                    fabric.signed_image_url = await getSignedUrl('fabric_images', fabric.image_url);
+                    return fabric;
+                })
+            );
+            
+            allFabricsCacheWithUrls = fabricsWithUrls; 
+            
+            if (document.getElementById('fabric-count')) document.getElementById('fabric-count').textContent = `(${fabricsWithUrls.length})`;
+            renderFabricList(fabricsWithUrls);
+        }
+        
+        function renderFabricList(fabrics) {
+            const listElement = document.getElementById('fabric-list');
+            if (!listElement) return;
+            listElement.innerHTML = '';
+            
+            fabrics.forEach(fabric => {
+                const listItem = document.createElement('li');
+                listItem.className = 'task-item fabric-item';
+                listItem.dataset.id = fabric.id;
+                
+                listItem.innerHTML = `
+                    <div class="task-header">
+                        <div class="item-details">
+                            <img src="${fabric.signed_image_url || placeholderImg}" alt="Fabric Image" class="item-image">
+                            <div class="item-info">
+                                <p class="title">${fabric.name}</p>
+                                <p><i class="fas fa-ruler"></i> Total Quantity: <strong>${fabric.quantity}</strong></p>
+                                ${fabric.description ? `<p style="font-style: italic; font-size: 0.85em;">Desc: ${fabric.description}</p>` : ''}
+                            </div>
+                        </div>
+                        <button class="settings-btn" data-id="${fabric.id}" data-type="fabric"><i class="fas fa-cog"></i></button>
+                    </div>
+                    <div class="settings-popup" id="settings-fabric-${fabric.id}">
+                        <button class="edit-fabric-btn" data-id="${fabric.id}"><i class="fas fa-edit"></i> Edit Details</button>
+                        <button class="history-fabric-btn" data-id="${fabric.id}"><i class="fas fa-history"></i> History</button>
+                        <button class="delete-fabric-btn" data-id="${fabric.id}"><i class="fas fa-trash-alt"></i> Delete</button>
+                    </div>
+                    <div class="fabric-actions">
+                        <button class="action-btn fabric-cutout-btn" data-id="${fabric.id}"><i class="fas fa-cut"></i> CutOut</button>
+                        <button class="action-btn fabric-add-qty-btn" data-id="${fabric.id}"><i class="fas fa-plus"></i> Add Quantity</button>
+                    </div>
+                `;
+                listElement.appendChild(listItem);
+            });
+        }
+        
+        async function handleCreateFabric(e) {
+             e.preventDefault();
+                const imageFile = fabricFileUploadInput.files[0];
+                const finalImageFile = capturedImageFile || imageFile;
+                const name = document.getElementById('fabric-item-name').value;
+                const quantity = parseFloat(document.getElementById('fabric-quantity').value);
+                const description = document.getElementById('fabric-description').value;
+                if (!finalImageFile || !name || isNaN(quantity)) {
+                    showMessage('Please fill all required fields (Image/Photo, Name, Quantity).', true);
+                    return;
+                }
+                document.getElementById('save-fabric-btn').disabled = true;
+                let imagePath = ''; 
+                try {
+                    const fileName = `fabric-${Date.now()}-${finalImageFile.name}`;
+                    const { data, error } = await supabase.storage.from('fabric_images').upload(fileName, finalImageFile);
+                    if (error) throw error;
+                    imagePath = data.path; 
+                } catch (error) {
+                    showMessage(`Image Upload Error: ${error.message}`, true);
+                    document.getElementById('save-fabric-btn').disabled = false;
+                    return;
+                }
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    const initialLog = {
+                        date: new Date().toISOString(),
+                        type: 'create',
+                        quantity: quantity,
+                        bill_number: 'Initial Stock',
+                        remaining_quantity: quantity
+                    };
+                    const { error } = await supabase.from('fabric').insert([{ 
+                        user_id: user.id, name: name, quantity: quantity,
+                        description: description || null, image_url: imagePath,
+                        history: [initialLog]
+                    }]);
+                    if (error) throw error;
+                    showMessage('Fabric created successfully!');
+                    createFabricModal.style.display = 'none';
+                    document.getElementById('create-fabric-form').reset();
+                    fabricImagePreview.style.display = 'none';
+                    capturedImageFile = null;
+                    fetchFabrics();
+                    navigate('fabric-list-page');
+                } catch (error) {
+                    // Agar database insert fail ho, toh upload ki gayi image ko delete karein
+                    showMessage(`Data Insert Error: ${error.message}. Deleting orphaned image...`, true);
+                    await supabase.storage.from('fabric_images').remove([imagePath]);
+                } finally {
+                    document.getElementById('save-fabric-btn').disabled = false;
+                }
+        }
+        async function deleteFabric(fabricId) {
+             if (!confirm('Are you sure you want to delete this fabric? Saari history delete ho jaayegi.')) return;
+             
+             // Pehle file delete karein
+             const fabricToDelete = allFabricsCacheWithUrls.find(f => f.id == fabricId);
+             if (fabricToDelete && fabricToDelete.image_url) {
+                try {
+                    const path = fabricToDelete.image_url;
+                    await supabase.storage.from('fabric_images').remove([path]);
+                } catch (imgErr) {
+                    showMessage(`Image delete error (but deleting row anyway): ${imgErr.message}`, true);
+                }
+             }
+
+             // Phir database row delete karein
+             const { error } = await supabase.from('fabric').delete().eq('id', fabricId);
+             if (error) showMessage(`Error deleting fabric row: ${error.message}`, true);
+             else {
+                 showMessage('Fabric deleted successfully.');
+                 fetchFabrics();
+             }
+        }
+        
+        function openEditFabricModal(fabricId) {
+            const fabric = allFabricsCacheWithUrls.find(f => f.id == fabricId); 
+            if (!fabric) { showMessage('Error: Fabric not found.', true); return; }
+                document.getElementById('edit-fabric-id').value = fabric.id;
+                document.getElementById('edit-fabric-item-name').value = fabric.name;
+                document.getElementById('edit-fabric-description').value = fabric.description || '';
+                document.querySelectorAll('.settings-popup').forEach(p => p.style.display = 'none');
+                editFabricModal.style.display = 'block';
+        }
+        async function handleUpdateFabric(e) {
+             e.preventDefault();
+                const fabricId = document.getElementById('edit-fabric-id').value;
+                const updates = {
+                    name: document.getElementById('edit-fabric-item-name').value,
+                    description: document.getElementById('edit-fabric-description').value || null
+                };
+                document.getElementById('update-fabric-btn').disabled = true;
+                try {
+                    const { error } = await supabase.from('fabric').update(updates).eq('id', fabricId);
+                    if (error) throw error;
+                    showMessage('Fabric details updated!');
+                    editFabricModal.style.display = 'none';
+                    fetchFabrics();
+                } catch (error) {
+                    showMessage(`Update Error: ${error.message}`, true);
+                } finally {
+                    document.getElementById('update-fabric-btn').disabled = false;
+                }
+        }
+
+        function openCutOutModal(fabricId) {
+             document.getElementById('cutout-fabric-id').value = fabricId;
+             fabricCutOutModal.style.display = 'block';
+        }
+        function openAddQtyModal(fabricId) {
+             document.getElementById('add-qty-fabric-id').value = fabricId;
+             fabricAddQtyModal.style.display = 'block';
+        }
+        
+        async function handleCutOut(e) {
+            e.preventDefault();
+            const fabricId = document.getElementById('cutout-fabric-id').value;
+            const quantityToCut = parseFloat(document.getElementById('cutout-quantity').value);
+            const billNumber = document.getElementById('cutout-bill-number').value || 'N/A';
+            
+            const fabric = allFabricsCacheWithUrls.find(f => f.id == fabricId); 
+            if (!fabric) { showMessage('Error: Fabric not found.', true); return; }
+                if (quantityToCut > fabric.quantity) {
+                    showMessage('Error: CutOut quantity is more than available stock.', true);
+                    return;
+                }
+                const newQuantity = fabric.quantity - quantityToCut;
+                const newHistoryEntry = {
+                    date: new Date().toISOString(),
+                    type: 'cut',
+                    quantity: -quantityToCut,
+                    bill_number: billNumber,
+                    remaining_quantity: newQuantity
+                };
+                const updatedHistory = [...(fabric.history || []), newHistoryEntry];
+                try {
+                    const { error } = await supabase.from('fabric')
+                        .update({ quantity: newQuantity, history: updatedHistory })
+                        .eq('id', fabricId);
+                    if (error) throw error;
+                    showMessage('Stock updated successfully!');
+                    fabricCutOutModal.style.display = 'none';
+                    document.getElementById('fabric-cutout-form').reset();
+                    fetchFabrics();
+                } catch (error) {
+                    showMessage(`CutOut Error: ${error.message}`, true);
+                }
+        }
+        async function handleAddQuantity(e) {
+            e.preventDefault();
+            const fabricId = document.getElementById('add-qty-fabric-id').value;
+            const quantityToAdd = parseFloat(document.getElementById('add-quantity').value);
+            
+            const fabric = allFabricsCacheWithUrls.find(f => f.id == fabricId); 
+            if (!fabric) { showMessage('Error: Fabric not found.', true); return; }
+                const newQuantity = fabric.quantity + quantityToAdd;
+                const newHistoryEntry = {
+                    date: new Date().toISOString(),
+                    type: 'add',
+                    quantity: +quantityToAdd,
+                    bill_number: 'Stock Added',
+                    remaining_quantity: newQuantity
+                };
+                const updatedHistory = [...(fabric.history || []), newHistoryEntry];
+                try {
+                    const { error } = await supabase.from('fabric')
+                        .update({ quantity: newQuantity, history: updatedHistory })
+                        .eq('id', fabricId);
+                    if (error) throw error;
+                    showMessage('Stock updated successfully!');
+                    fabricAddQtyModal.style.display = 'none';
+                    document.getElementById('fabric-add-quantity-form').reset();
+                    fetchFabrics();
+                } catch (error) {
+                    showMessage(`Add Quantity Error: ${error.message}`, true);
+                }
+        }
+
+        function openHistoryModal(fabricId) {
+            const fabric = allFabricsCacheWithUrls.find(f => f.id == fabricId); 
+            if (!fabric) { showMessage('Error: Fabric not found.', true); return; }
+                document.getElementById('fabric-history-title').innerText = `History for ${fabric.name}`;
+                const list = document.getElementById('fabric-history-list');
+                list.innerHTML = '';
+                if (!fabric.history || fabric.history.length === 0) {
+                    list.innerHTML = '<li>No history found.</li>';
+                } else {
+                    [...fabric.history].reverse().forEach(log => {
+                        const li = document.createElement('li');
+                        const date = new Date(log.date).toLocaleString();
+                        if (log.type === 'create') {
+                            li.className = 'log-create';
+                            li.innerHTML = `<strong>Created: +${log.quantity}</strong> (Remaining: ${log.remaining_quantity})<span class="log-date">${date}</span>`;
+                        } else if (log.type === 'add') {
+                            li.className = 'log-add';
+                            li.innerHTML = `<strong>Added: +${log.quantity}</strong> (Remaining: ${log.remaining_quantity})<span class="log-date">${date}</span>`;
+                        } else if (log.type === 'cut') {
+                            li.className = 'log-cut';
+                            li.innerHTML = `<strong>Cut: ${log.quantity}</strong> (Remaining: ${log.remaining_quantity})
+                                          <span class="log-bill">Bill: ${log.bill_number}</span>
+                                          <span class="log-date">${date}</span>`;
+                        }
+                        list.appendChild(li);
+                    });
+                }
+                document.querySelectorAll('.settings-popup').forEach(p => p.style.display = 'none');
+                fabricHistoryModal.style.display = 'block';
+        }
+
+        
+    // --- PENDING CUTOUT FLOW ---
+    
+    function openFabricSelectionModal(taskId) {
+        const task = allTasksCacheWithUrls.find(t => t.id == taskId);
+        if (!task) {
+            showMessage('Error: Order details not found.', true);
+            return;
+        }
+        document.getElementById('pending-fabric-selection-task-id').value = taskId;
+        populateFabricSelectionModal('');
+        pendingFabricSelectionModal.style.display = 'block';
+    }
+
+    function populateFabricSelectionModal(filter = '') {
+        const listElement = document.getElementById('pending-fabric-modal-list');
+        const f = filter.toLowerCase();
+        
+        const filteredFabrics = allFabricsCacheWithUrls.filter(fab => 
+            fab.name.toLowerCase().includes(f)
+        );
+        
+        listElement.innerHTML = ''; 
+        
+        if (filteredFabrics.length === 0) {
+            listElement.innerHTML = '<li style="padding: 10px; text-align: center;">No fabric found.</li>';
+            return;
+        }
+        
+        filteredFabrics.forEach(fabric => {
+            const listItem = document.createElement('li');
+            listItem.className = 'task-item fabric-item fabric-select-item-btn'; 
+            listItem.dataset.fabricId = fabric.id; 
+            
+            listItem.innerHTML = `
+                <div class="task-header">
+                    <div class="item-details">
+                        <img src="${fabric.signed_image_url || placeholderImg}" alt="Fabric Image" class="item-image" style="width: 80px; height: 80px;">
+                        <div class="item-info">
+                            <p class="title">${fabric.name}</p>
+                            <p><i class="fas fa-ruler"></i> Stock: <strong>${fabric.quantity}</strong></p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            listElement.appendChild(listItem);
+        });
+    }
+    
+    function openPendingCutoutConfirmationModal(taskId, fabricId) {
+        const task = allTasksCacheWithUrls.find(t => t.id == taskId);
+        const fabric = allFabricsCacheWithUrls.find(f => f.id == fabricId);
+
+        if (!task || !fabric) {
+            showMessage('Error: Could not find order or fabric.', true);
+            return;
+        }
+        
+        document.getElementById('confirm-cutout-task-id').value = taskId;
+        document.getElementById('confirm-cutout-fabric-id').value = fabricId;
+        
+        const taskBills = (task.bill_numbers && task.bill_numbers.length > 0) ? task.bill_numbers.join(', ') : 'N/A';
+        document.getElementById('confirm-order-details').textContent = `Bill: ${taskBills} (Item: ${task.item_name || 'N/A'}, Qty: ${task.quantity})`;
+        document.getElementById('confirm-fabric-details').textContent = `${fabric.name}`;
+        document.getElementById('confirm-fabric-available').textContent = `${fabric.quantity} meters`;
+        
+        document.getElementById('confirm-cutout-bill').value = taskBills;
+        document.getElementById('confirm-cutout-quantity').value = '';
+        
+        pendingFabricSelectionModal.style.display = 'none'; 
+        pendingCutoutConfirmationModal.style.display = 'block'; 
+    }
+    
+    async function handlePendingCutoutConfirmation(e) {
+        e.preventDefault();
+        
+        const taskId = document.getElementById('confirm-cutout-task-id').value;
+        const fabricId = document.getElementById('confirm-cutout-fabric-id').value;
+        const quantityToCut = parseFloat(document.getElementById('confirm-cutout-quantity').value);
+        const billNumber = document.getElementById('confirm-cutout-bill').value || 'N/A';
+        
+        const task = allTasksCacheWithUrls.find(t => t.id == taskId);
+        const fabric = allFabricsCacheWithUrls.find(f => f.id == fabricId);
+
+        if (!task || !fabric) {
+            showMessage('Error: Task or Fabric data missing.', true);
+            return;
+        }
+        if (!quantityToCut || quantityToCut <= 0) {
+            showMessage('Please enter a valid quantity to cut.', true);
+            return;
+        }
+        if (quantityToCut > fabric.quantity) {
+            showMessage(`Error: Not enough stock. Available: ${fabric.quantity}, Required: ${quantityToCut}`, true);
+            return;
+        }
+        
+        document.getElementById('save-pending-cutout-btn').disabled = true;
+
+        const newFabricQuantity = fabric.quantity - quantityToCut;
+        const newHistoryEntry = {
+            date: new Date().toISOString(),
+            type: 'cut',
+            quantity: -quantityToCut,
+            bill_number: `Order (Bill: ${billNumber})`, 
+            remaining_quantity: newFabricQuantity
+        };
+        const updatedHistory = [...(fabric.history || []), newHistoryEntry];
+        
+        try {
+            const { error: fabricError } = await supabase.from('fabric')
+                .update({ quantity: newFabricQuantity, history: updatedHistory })
+                .eq('id', fabricId);
+            
+            if (fabricError) throw new Error(`Fabric Update Error: ${fabricError.message}`);
+            
+            const { error: taskError } = await supabase.from('tasks')
+                .update({ status: 'done', done_at: new Date().toISOString() })
+                .eq('id', taskId);
+            
+            if (taskError) throw new Error(`Task Update Error: ${taskError.message}`);
+
+            showMessage('CutOut successful! Order has been moved to Done.');
+            pendingCutoutConfirmationModal.style.display = 'none';
+            
+            fetchTasks();
+            fetchFabrics();
+            
+        } catch (error) {
+            showMessage(`Error processing cutout: ${error.message}`, true);
+        } finally {
+            document.getElementById('save-pending-cutout-btn').disabled = false;
+        }
+    }
+
+
+    // --- EVENT LISTENERS ---
+
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+    document.getElementById('logout-btn').addEventListener('click', handleLogout);
+    
+    document.getElementById('pending-btn').addEventListener('click', () => navigate('pending-list-page'));
+    document.getElementById('done-btn').addEventListener('click', () => navigate('done-list-page'));
+    document.getElementById('action-list-btn').addEventListener('click', () => navigate('action-list-page')); 
+    document.getElementById('urgent-list-btn').addEventListener('click', () => navigate('urgent-list-page')); 
+    document.getElementById('fabric-list-btn').addEventListener('click', () => navigate('fabric-list-page')); 
+    
+    document.querySelectorAll('.back-to-home').forEach(btn => {
+        btn.addEventListener('click', () => navigate('home-page'));
+    });
+    
+    document.getElementById('create-btn').addEventListener('click', () => createModal.style.display = 'block');
+    document.getElementById('open-action-modal-btn').addEventListener('click', () => createActionModal.style.display = 'block'); 
+    document.getElementById('open-urgent-modal-btn').addEventListener('click', () => createUrgentModal.style.display = 'block'); 
+    document.getElementById('open-fabric-modal-btn').addEventListener('click', () => createFabricModal.style.display = 'block'); 
+
+    document.querySelectorAll('.modal .close-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.target.closest('.modal').style.display = 'none';
+        });
+    });
+    
+    document.getElementById('create-task-form').addEventListener('submit', handleCreateTask);
+    document.getElementById('create-action-form').addEventListener('submit', handleCreateAction); 
+    document.getElementById('create-urgent-form').addEventListener('submit', handleCreateUrgent); 
+    document.getElementById('edit-task-form').addEventListener('submit', handleUpdateTask); 
+    document.getElementById('edit-action-urgent-form').addEventListener('submit', handleUpdateActionUrgent); 
+    document.getElementById('create-fabric-form').addEventListener('submit', handleCreateFabric); 
+    document.getElementById('edit-fabric-form').addEventListener('submit', handleUpdateFabric); 
+    document.getElementById('fabric-cutout-form').addEventListener('submit', handleCutOut); 
+    document.getElementById('fabric-add-quantity-form').addEventListener('submit', handleAddQuantity); 
+    document.getElementById('pending-cutout-confirmation-form').addEventListener('submit', handlePendingCutoutConfirmation); 
+
+    document.getElementById('add-bill-btn').addEventListener('click', () => addMoreBill('bill-numbers-container'));
+    document.getElementById('add-edit-bill-btn').addEventListener('click', () => addMoreBill('edit-bill-numbers-container'));
+    
+    document.getElementById('open-camera-btn-item').addEventListener('click', () => { createModal.style.display = 'none'; startCamera('item'); });
+    document.getElementById('open-camera-btn-fabric').addEventListener('click', () => { createFabricModal.style.display = 'none'; startCamera('fabric'); }); 
+    
+    document.getElementById('close-camera-btn').addEventListener('click', () => { 
+        stopCamera();
+        if (currentCameraTrigger === 'item') createModal.style.display = 'block';
+        else if (currentCameraTrigger === 'fabric') createFabricModal.style.display = 'block';
+    });
+    document.getElementById('switch-camera-btn').addEventListener('click', switchCamera);
+    document.getElementById('capture-btn').addEventListener('click', captureImage);
+
+    itemFileUploadInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            itemImagePreview.src = URL.createObjectURL(file);
+            itemImagePreview.style.display = 'block';
+            capturedImageFile = null;
+        }
+    });
+    fabricFileUploadInput.addEventListener('change', (e) => { 
+        const file = e.target.files[0];
+        if (file) {
+            fabricImagePreview.src = URL.createObjectURL(file);
+            fabricImagePreview.style.display = 'block';
+            capturedImageFile = null;
+        }
+    });
+
+    imagePopupModal.querySelector('.close-popup-btn').addEventListener('click', () => imagePopupModal.style.display = 'none');
+    document.getElementById('share-image-btn').addEventListener('click', async () => {
+         const src = popupImageSrc.src; 
+            if (navigator.share) {
+                try {
+                    const response = await fetch(src);
+                    const blob = await response.blob();
+                    const file = new File([blob], 'item_image.jpg', { type: blob.type });
+                    await navigator.share({ title: 'Royal Sherwani Item', files: [file] });
+                } catch (err) {
+                    console.error('File share failed:', err);
+                    await navigator.share({ title: 'Royal Sherwani Item', text: 'Check this item' }).catch(e => {});
+                }
+            } else {
+                showMessage('Share feature is not supported on your browser.', true);
+            }
+    });
+
+    // --- SEARCH BARS ---
+    
+    document.getElementById('pending-search').addEventListener('keyup', (e) => {
+        const filter = e.target.value.toLowerCase();
+        const filtered = allTasksCacheWithUrls.filter(t => 
+            t.status === 'pending' && (
+                (t.item_name && t.item_name.toLowerCase().includes(filter)) ||
+                (t.bill_numbers && t.bill_numbers.join(',').includes(filter))
+            )
+        );
+        renderTaskList(filtered, 'pending-list');
+    });
+    
+    document.getElementById('done-search').addEventListener('keyup', (e) => {
+        const filter = e.target.value.toLowerCase();
+        const filtered = allTasksCacheWithUrls.filter(t => 
+            t.status === 'done' && (
+                (t.item_name && t.item_name.toLowerCase().includes(filter)) ||
+                (t.bill_numbers && t.bill_numbers.join(',').includes(filter))
+            )
+        );
+        renderTaskList(filtered, 'done-list');
+    });
+    
+    document.getElementById('action-search').addEventListener('keyup', (e) => {
+        const filter = e.target.value.toLowerCase();
+        const filtered = allActionsCache.filter(t => 
+            (t.bill_number && t.bill_number.toLowerCase().includes(filter)) ||
+            (t.mobile_number && t.mobile_number.includes(filter)) ||
+            (t.description && t.description.toLowerCase().includes(filter))
+        );
+        renderActionUrgentList(filtered, 'action-list', 'actions');
+    });
+
+    document.getElementById('urgent-search').addEventListener('keyup', (e) => {
+        const filter = e.target.value.toLowerCase();
+        const filtered = allUrgentsCache.filter(t => 
+            (t.bill_number && t.bill_number.toLowerCase().includes(filter)) ||
+            (t.mobile_number && t.mobile_number.includes(filter)) ||
+            (t.description && t.description.toLowerCase().includes(filter))
+        );
+        renderActionUrgentList(filtered, 'urgent-list', 'urgent');
+    });
+
+    document.getElementById('fabric-search').addEventListener('keyup', (e) => {
+        const filter = e.target.value.toLowerCase();
+        const filtered = allFabricsCacheWithUrls.filter(f => 
+            (f.name && f.name.toLowerCase().includes(filter))
+        );
+        renderFabricList(filtered);
+    });
+    
+    document.getElementById('pending-fabric-modal-search').addEventListener('keyup', (e) => {
+        populateFabricSelectionModal(e.target.value);
+    });
+
+
+    // --- EVENT DELEGATION ---
+    
+    document.getElementById('app-pages').addEventListener('click', (e) => {
+        const target = e.target;
+        
+        if (target.closest('.settings-btn')) {
+             const btn = target.closest('.settings-btn');
+                const type = btn.dataset.type || 'task'; 
+                const id = btn.dataset.taskId || btn.dataset.id;
+                const popupId = `settings-${type}-${id}`;
+                document.querySelectorAll('.settings-popup').forEach(p => {
+                     if (p.id !== popupId) p.style.display = 'none';
+                });
+                const popup = document.getElementById(popupId);
+                if (popup) popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+                e.stopPropagation(); return;
+        }
+        
+        // Task (Item) Actions
+        if (target.closest('.edit-task-btn')) { 
+            openEditModal(target.closest('.edit-task-btn').dataset.taskId); return;
+        }
+        if (target.closest('.delete-task-btn')) {
+            deleteTask(target.closest('.delete-task-btn').dataset.taskId); return;
+        }
+        if (target.closest('.transfer-task-btn')) {
+            const btn = target.closest('.transfer-task-btn');
+            transferTask(btn.dataset.taskId, btn.dataset.newStatus); return;
+        }
+        if (target.closest('.complete-task-btn')) {
+            completeTask(target.closest('.complete-task-btn').dataset.taskId); return;
+        }
+        if (target.closest('.toggle-stuck-btn') && target.closest('.task-item:not(.action-item):not(.urgent-item):not(.fabric-item)')) {
+            const btn = target.closest('.toggle-stuck-btn');
+            const isStuck = btn.dataset.isStuck === 'true';
+            toggleStuckTask(btn.dataset.taskId, isStuck); return;
+        }
+        
+        // Action/Urgent Item Actions
+        if (target.closest('.edit-action-urgent-btn')) { 
+            const btn = target.closest('.edit-action-urgent-btn');
+            openEditActionUrgentModal(btn.dataset.id, btn.dataset.type); return;
+        }
+        if (target.closest('.delete-action-urgent-btn')) { 
+            const btn = target.closest('.delete-action-urgent-btn');
+            deleteActionUrgent(btn.dataset.id, btn.dataset.type); return;
+        }
+        if (target.closest('.toggle-stuck-btn') && (target.closest('.action-item') || target.closest('.urgent-item'))) { 
+            const btn = target.closest('.toggle-stuck-btn');
+            const isStuck = btn.dataset.isStuck === 'true';
+            toggleStuckActionUrgent(btn.dataset.id, isStuck, btn.dataset.type); return;
+        }
+
+        // Fabric Actions
+        if (target.closest('.edit-fabric-btn')) {
+            openEditFabricModal(target.closest('.edit-fabric-btn').dataset.id); return;
+        }
+        if (target.closest('.delete-fabric-btn')) {
+            deleteFabric(target.closest('.delete-fabric-btn').dataset.id); return;
+        }
+        if (target.closest('.history-fabric-btn')) {
+            openHistoryModal(target.closest('.history-fabric-btn').dataset.id); return;
+        }
+        if (target.closest('.fabric-cutout-btn')) {
+            openCutOutModal(target.closest('.fabric-cutout-btn').dataset.id); return;
+        }
+        if (target.closest('.fabric-add-qty-btn')) {
+            openAddQtyModal(target.closest('.fabric-add-qty-btn').dataset.id); return;
+        }
+
+        // Image Popup
+        if (target.classList.contains('item-image')) {
+            // ** CLICK FIX **
+            // Ab yeh placeholder par bhi click hone dega
+            if (target.src && !target.src.startsWith('blob:')) { 
+                popupImageSrc.src = target.src; 
+                imagePopupModal.style.display = 'block';
+            }
+            return;
+        }
+        
+        // PENDING CUTOUT ACTIONS
+        if (target.closest('.pending-cutout-btn')) {
+            const taskId = target.closest('.pending-cutout-btn').dataset.taskId;
+            openFabricSelectionModal(taskId);
+            return;
+        }
+    });
+    
+    document.getElementById('pending-fabric-modal-list').addEventListener('click', (e) => {
+        const target = e.target;
+        if (target.closest('.fabric-select-item-btn')) {
+            const fabricId = target.closest('.fabric-select-item-btn').dataset.fabricId;
+            const taskId = document.getElementById('pending-fabric-selection-task-id').value;
+            openPendingCutoutConfirmationModal(taskId, fabricId);
+            return;
+        }
+    });
+        
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = "none";
+        }
+        if (!event.target.matches('.settings-btn, .settings-btn *')) {
+            document.querySelectorAll('.settings-popup').forEach(p => p.style.display = 'none');
+        }
+    }
+    
+    // Initial App Start
+    checkUser(true); 
+
+}); // 'DOMContentLoaded' listener yahan khatam hota hai
+</script>
+
+</body>
+</html>
